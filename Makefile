@@ -1,36 +1,44 @@
+# Toolchain setup
 CC=avr-gcc
-CFLAGS=-Wall -Os -DF_CPU=$(F_CPU) -mmcu=$(MCU)
-MCU=attiny2313
-F_CPU=20480000UL
-
+CFLAGS=-Wall -Os -DF_CPU=$(F_CPU) -DBAUD=$(UART_BAUD) -mmcu=$(MCU)
 OBJCOPY=avr-objcopy
 BIN_FORMAT=ihex
+RM=rm -f
 
+# Board setup
+MCU=attiny2313
+F_CPU=20480000UL
+UART_BAUD=9600
+
+# Programmer setup
 #PORT=/dev/cuaU0
 BAUD=19200
 PROTOCOL=usbtiny
 PART=t2313#$(MCU)
 AVRDUDE=avrdude -F -V
 
-RM=rm -f
+SOURCES=fc.c uart.c
+OBJECTS=$(SOURCES:.c=.s)
 
 .PHONY: all
-all: blink.hex
+all: fc.hex
 
-blink.hex: blink.elf
+fc.hex: fc.elf
 
-blink.elf: blink.s
+fc.elf: $(OBJECTS)
 
-blink.s: blink.c
+fc.s: fc.c
+
+uart.s: uart.c
 
 .PHONY: clean
 clean:
-	$(RM) blink.elf blink.hex blink.s
+	$(RM) fc.elf fc.hex $(OBJECTS)
 
 .PHONY: upload
-upload: blink.hex
+upload: fc.hex
 	$(AVRDUDE) -c $(PROTOCOL) -p $(PART)  -b $(BAUD) -U flash:w:$< #-P $(PORT)
-%.elf: %.s ; $(CC) $(CFLAGS) -s -o $@ $<
+%.elf: %.s ; $(CC) $(CFLAGS) -s -o $@ $(OBJECTS)
 
 %.s: %.c ; $(CC) $(CFLAGS) -S -o $@ $<
 
